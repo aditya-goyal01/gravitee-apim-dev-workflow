@@ -91,6 +91,7 @@ print(json.dumps({
     "totalWaves": int(a[10]), "currentWave": int(a[11])
 }))
 PY
+# shellcheck disable=SC2188
 2>/dev/null || echo "")
 [ -n "$METRICS_ENTRY" ] && echo "$METRICS_ENTRY" >> "$METRICS_FILE"
 

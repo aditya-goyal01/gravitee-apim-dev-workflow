@@ -73,7 +73,7 @@ compute_trend() {
 }
 
 HAS_PREV=0
-AVG_TOOL_USE=0; AVG_COMMITS=0; AVG_FILES=0; AVG_DURATION=0
+AVG_TOOL_USE=0; AVG_COMMITS=0; AVG_FILES=0
 
 if [ "$TOTAL_SESSIONS" -ge 2 ] 2>/dev/null; then
     HAS_PREV=1
@@ -87,7 +87,6 @@ if [ "$TOTAL_SESSIONS" -ge 2 ] 2>/dev/null; then
     AVG_TOOL_USE=$(avg_field "toolUseCount")
     AVG_COMMITS=$(avg_field "commitsCreated")
     AVG_FILES=$(avg_field "filesChanged")
-    AVG_DURATION=$(avg_field "duration")
 fi
 
 TREND_TOOL_USE=$(compute_trend "$LAST_TOOL_USE" "$AVG_TOOL_USE" "$HAS_PREV")
