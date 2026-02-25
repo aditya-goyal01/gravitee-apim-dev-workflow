@@ -34,7 +34,9 @@ INFO ""
 # ── Copy lib/ (term.sh and git.sh — state.sh retired) ────────────────────────
 mkdir -p "${HOME}/.claude/lib"
 for lib in term.sh git.sh; do
-    cp "${SCRIPT_DIR}/lib/${lib}" "${HOME}/.claude/lib/${lib}"
+    src="${SCRIPT_DIR}/lib/${lib}"
+    [ -f "$src" ] || { printf '\033[31m✗ Missing: %s\033[0m\n' "$src"; exit 1; }
+    cp "$src" "${HOME}/.claude/lib/${lib}"
 done
 OK "Installed lib/ (term.sh, git.sh)"
 
@@ -85,10 +87,24 @@ hooks_patch = {
     }
 }
 
-# Deep merge: preserve existing keys, merge hooks
+# Deep merge: append our hooks without overwriting hooks from other plugins
 if "hooks" not in settings:
     settings["hooks"] = {}
-settings["hooks"].update(hooks_patch["hooks"])
+
+for event, hook_list in hooks_patch["hooks"].items():
+    if event not in settings["hooks"]:
+        settings["hooks"][event] = hook_list
+    else:
+        existing_cmds = {
+            h.get("command", "")
+            for block in settings["hooks"][event]
+            for h in block.get("hooks", [])
+        }
+        for block in hook_list:
+            for h in block.get("hooks", []):
+                if h.get("command", "") not in existing_cmds:
+                    settings["hooks"][event].append(block)
+                    break
 
 with open(path, "w") as f:
     json.dump(settings, f, indent=2)
