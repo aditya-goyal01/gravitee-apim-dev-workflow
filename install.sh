@@ -17,7 +17,6 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 OK()  { printf '\033[32m✓ %s\033[0m\n' "$*"; }
 INFO(){ printf '  %s\n' "$*"; }
-WARN(){ printf '\033[33m⚠ %s\033[0m\n' "$*"; }
 
 # ── Pre-flight checks ─────────────────────────────────────────────────────────
 if [ ! -d "${HOME}/.claude" ]; then
@@ -44,6 +43,7 @@ OK "Installed lib/ (term.sh, git.sh)"
 mkdir -p "${HOME}/.claude/hooks"
 for script in session-loader.sh session-reviewer.sh session-terminator.sh branch-manager.sh; do
     src="${SCRIPT_DIR}/hooks/${script}"
+    [ -f "$src" ] || { printf '\033[31m✗ Missing: %s\033[0m\n' "$src"; exit 1; }
     dst="${HOME}/.claude/hooks/${script}"
     cp "$src" "$dst"
     chmod +x "$dst"
@@ -87,7 +87,11 @@ hooks_patch = {
     }
 }
 
-# Deep merge: append our hooks without overwriting hooks from other plugins
+# Block-level union: for each event, append any block whose commands are not
+# fully present in existing settings. Blocks are atomic (matcher semantics).
+# Existing entries from other plugins are never removed. Idempotent for clean
+# states; partial-state re-runs (manually edited settings.json) may duplicate
+# commands — acceptable for a simple installer.
 if "hooks" not in settings:
     settings["hooks"] = {}
 
@@ -101,10 +105,9 @@ for event, hook_list in hooks_patch["hooks"].items():
             for h in block.get("hooks", [])
         }
         for block in hook_list:
-            for h in block.get("hooks", []):
-                if h.get("command", "") not in existing_cmds:
-                    settings["hooks"][event].append(block)
-                    break
+            block_cmds = {h.get("command", "") for h in block.get("hooks", [])}
+            if not block_cmds.issubset(existing_cmds):
+                settings["hooks"][event].append(block)
 
 with open(path, "w") as f:
     json.dump(settings, f, indent=2)
