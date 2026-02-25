@@ -1,9 +1,11 @@
 ---
 name: Bug report
-about: Create a report to help us improve
-title: ''
-labels: ''
-assignees: ''
+about: All details outlining the bug or issue, including clear steps to reproduce
+  it, the expected outcome, any additional relevant information, and helpful screenshots
+  if available.
+title: 'bug (scope): fix me'
+labels: bug
+assignees: aditya-goyal01
 
 ---
 
@@ -23,16 +25,5 @@ A clear and concise description of what you expected to happen.
 **Screenshots**
 If applicable, add screenshots to help explain your problem.
 
-**Desktop (please complete the following information):**
- - OS: [e.g. iOS]
- - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
-
-**Smartphone (please complete the following information):**
- - Device: [e.g. iPhone6]
- - OS: [e.g. iOS8.1]
- - Browser [e.g. stock browser, safari]
- - Version [e.g. 22]
-
-**Additional context**
-Add any other context about the problem here.
+**Additional information**
+Add any other information about the problem here e.g. platform or environment specific details, specific version.

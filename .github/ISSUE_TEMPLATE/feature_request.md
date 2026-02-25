@@ -1,9 +1,10 @@
 ---
 name: Feature request
-about: Suggest an idea for this project
-title: ''
-labels: ''
-assignees: ''
+about: Use this template to propose a new idea or enhancement for the project. Clearly
+  describe your suggestion, why it would be useful, and how it could improve the project.
+title: 'feature (scope): request to add a new plugin'
+labels: enhancement
+assignees: aditya-goyal01
 
 ---
 
