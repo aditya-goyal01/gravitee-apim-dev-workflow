@@ -32,9 +32,9 @@ INFO "Continuing with manual install (hooks only — no skill registration)..."
 INFO ""
 
 # ── Copy lib/ (term.sh and git.sh — state.sh retired) ────────────────────────
-mkdir -p "${HOME}/.claude/hooks/lib"
+mkdir -p "${HOME}/.claude/lib"
 for lib in term.sh git.sh; do
-    cp "${SCRIPT_DIR}/lib/${lib}" "${HOME}/.claude/hooks/lib/${lib}"
+    cp "${SCRIPT_DIR}/lib/${lib}" "${HOME}/.claude/lib/${lib}"
 done
 OK "Installed lib/ (term.sh, git.sh)"
 

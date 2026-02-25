@@ -57,7 +57,7 @@ AskUserQuestion header="Wave plan" options:
   2. "Adjust waves" — (ask what to change, re-present)
 
 If Dev rejects the wave breakdown more than once, offer a third option:
-  3. "Implement manually — skip agent planning"
+  1. "Implement manually — skip agent planning"
 If chosen: write task-state.md with a single wave containing all files and generic steps.
 
 ## Phase 4 — Parallel agent spawn

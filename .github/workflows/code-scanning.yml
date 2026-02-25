@@ -23,3 +23,15 @@ jobs:
               run: |
                   find . -name '*.sh' -not -path './.git/*' \
                     | xargs shellcheck --severity=warning -e SC1091
+
+    test-hooks:
+        name: Hook Tests
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Install jq
+              run: sudo apt-get install -y jq
+
+            - name: Run test suite
+              run: bash test-hooks.sh

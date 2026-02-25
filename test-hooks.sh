@@ -640,11 +640,11 @@ AUTHOR=$(jq -r '.author.name' "$PJ" 2>/dev/null)
     && pass "5.2  plugin.json author.name = '$AUTHOR'" \
     || fail "5.2  plugin.json author.name missing"
 
-# 5.3 All 6 expected skills registered in plugin.json
+# 5.3 All 6 expected skills have SKILL.md files (plugin.json uses directory path, not array)
 for skill in hello install-tools install-plugins install-mcp-servers plan-task implement-task; do
-    jq -e ".skills[] | select(.name == \"$skill\")" "$PJ" >/dev/null 2>&1 \
-        && pass "5.3  skill '$skill' registered in plugin.json" \
-        || fail "5.3  skill '$skill' NOT in plugin.json"
+    [ -f "$PLUGIN_DIR/skills/$skill/SKILL.md" ] \
+        && pass "5.3  skill '$skill' has SKILL.md" \
+        || fail "5.3  skill '$skill' SKILL.md missing"
 done
 
 # 5.4 All 6 expected skills have SKILL.md files

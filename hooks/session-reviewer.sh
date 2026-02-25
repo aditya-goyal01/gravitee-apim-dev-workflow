@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # session-reviewer.sh — SessionStart hook
 # Reads session metrics and emits a compact summary to stderr (terminal only).
-# Matcher: "startup"
+# Matcher: "startup|resume|clear|compact"
 set -euo pipefail
 
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 source "${PLUGIN_ROOT}/lib/term.sh"
 
-IFS= read -r INPUT || INPUT="{}"
+IFS= read -r -t 3 INPUT 2>/dev/null || INPUT="{}"
 CWD=$(echo "$INPUT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('cwd',''))" 2>/dev/null || echo "")
 
 METRICS_FILE="${CWD}/.claude/session-metrics.jsonl"
