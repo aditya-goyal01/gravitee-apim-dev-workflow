@@ -1,0 +1,11 @@
+{
+    "name": "gravitee-dev-workflow",
+    "version": "2.0.0",
+    "description": "Complete development workflow for Gravitee APIM engineers — onboarding, session lifecycle, wave-based planning, TDD execution",
+    "author": { "name": "Gravitee.io", "url": "https://gravitee.io" },
+    "repository": "https://github.com/gravitee-io/gravitee-agentic-framework-samples",
+    "license": "Apache-2.0",
+    "keywords": ["gravitee", "apim", "workflow", "tdd", "session-management"],
+    "skills": "./skills/",
+    "hooks": "./hooks/hooks.json"
+}
