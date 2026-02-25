@@ -1,0 +1,25 @@
+name: Code Scanning
+
+on:
+    push:
+        branches: [main]
+    pull_request:
+        branches: [main]
+    schedule:
+        - cron: "30 5 * * 1"
+
+permissions:
+    contents: read
+    security-events: write
+
+jobs:
+    shellcheck:
+        name: ShellCheck
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Run ShellCheck
+              run: |
+                  find . -name '*.sh' -not -path './.git/*' \
+                    | xargs shellcheck --severity=warning -e SC1091

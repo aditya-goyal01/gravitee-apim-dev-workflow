@@ -1,7 +1,7 @@
 ---
 name: General inquiry
 about: Questions, improvements, documentation updates, discussions, or anything not covered by bug reports or feature requests.
-title: "chore(scope): <short description>"
+title: "docs(scope): <short description>"
 labels: help wanted, question
 assignees: aditya-goyal01
 ---
