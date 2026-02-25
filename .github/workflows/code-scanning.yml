@@ -1,0 +1,36 @@
+name: Code Scanning
+
+on:
+    push:
+        branches: [main]
+    pull_request:
+        branches: [main]
+    schedule:
+        - cron: "30 5 * * 1"
+
+permissions:
+    contents: read
+
+jobs:
+    shellcheck:
+        name: ShellCheck
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # actions/checkout v6.0.2
+
+            - name: Run ShellCheck
+              run: |
+                  find . -name '*.sh' -not -path './.git/*' \
+                    | xargs shellcheck --severity=warning -e SC1091
+
+    test-hooks:
+        name: Hook Tests
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # actions/checkout v6.0.2
+
+            - name: Install jq
+              run: sudo apt-get install -y jq
+
+            - name: Run test suite
+              run: bash test-hooks.sh
