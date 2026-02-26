@@ -29,8 +29,10 @@ WAVES_DONE=0
 TOTAL_WAVES=0
 CURRENT_WAVE=1
 if [ -f "$TASK_STATE" ]; then
-    WAVES_DONE=$(grep -c "^### Wave.*✓" "$TASK_STATE" 2>/dev/null || echo "0")
-    TOTAL_WAVES=$(grep -c "^### Wave " "$TASK_STATE" 2>/dev/null || echo "0")
+    WAVES_DONE=$(grep -c "^### Wave.*✓" "$TASK_STATE" 2>/dev/null || true)
+    WAVES_DONE="${WAVES_DONE:-0}"
+    TOTAL_WAVES=$(grep -c "^### Wave " "$TASK_STATE" 2>/dev/null || true)
+    TOTAL_WAVES="${TOTAL_WAVES:-0}"
     CURRENT_WAVE=$(grep "^Wave: " "$TASK_STATE" 2>/dev/null | head -1 | grep -oE "[0-9]+" | head -1 || echo "1")
 fi
 
@@ -94,7 +96,8 @@ fi
 # --- Tool use count ---
 TOOL_USE_COUNT=0
 if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
-    TOOL_USE_COUNT=$(grep -c '"type":"tool_use"' "$TRANSCRIPT_PATH" 2>/dev/null || echo "0")
+    TOOL_USE_COUNT=$(grep -c '"type":"tool_use"' "$TRANSCRIPT_PATH" 2>/dev/null || true)
+    TOOL_USE_COUNT="${TOOL_USE_COUNT:-0}"
 fi
 
 # --- Workflow type ---

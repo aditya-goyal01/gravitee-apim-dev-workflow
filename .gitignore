@@ -9,3 +9,6 @@ node_modules/
 
 # Local Claude Code session state (task-state.md lives on feature branches in APIM repos, not here)
 .claude/
+
+
+/qodana.yaml

@@ -90,8 +90,8 @@ if [ "$TOTAL_SESSIONS" -ge 2 ] 2>/dev/null; then
     [ "$PREV_COUNT" -gt 4 ] && PREV_COUNT=4
     PREV_LINES=$(head -n $(( TOTAL_SESSIONS - 1 )) "$METRICS_FILE" | tail -n "$PREV_COUNT")
     avg_field() {
-        echo "$PREV_LINES" | grep -oE "\"$1\":[0-9]+" | grep -oE '[0-9]+$' \
-            | awk '{s+=$1; n++} END {if(n>0) printf "%d", s/n; else print 0}'
+        echo "$PREV_LINES" | grep -oE "\"$1\": *[0-9]+" | grep -oE '[0-9]+$' \
+            | awk '{s+=$1; n++} END {if(n>0) printf "%d", s/n; else print 0}' || true
     }
     AVG_TOOL_USE=$(avg_field "toolUseCount")
     AVG_COMMITS=$(avg_field "commitsCreated")
@@ -125,7 +125,8 @@ else
 fi
 
 # --- Branch compliance ---
-APIM_ENTRIES=$(grep -c '"branch":"apim-' "$METRICS_FILE" 2>/dev/null || echo "0")
+APIM_ENTRIES=$(grep -c '"branch":"apim-' "$METRICS_FILE" 2>/dev/null || true)
+APIM_ENTRIES="${APIM_ENTRIES:-0}"
 COMPLIANCE_STR=""
 if [ "$TOTAL_SESSIONS" -gt 0 ] 2>/dev/null; then
     COMPLIANCE=$(( APIM_ENTRIES * 100 / TOTAL_SESSIONS ))
@@ -162,7 +163,8 @@ if [[ "$RATING" != "❤️ Awesome" ]] && [ -f "$TASK_STATE" ] 2>/dev/null; then
     CURRENT_WAVE_NUM=$(extract_field "$LAST_ENTRY" "currentWave")
     SESSIONS_ON_WAVE=0
     if [ -n "$CURRENT_WAVE_NUM" ] && [ "$CURRENT_WAVE_NUM" != "0" ] && [ "$CURRENT_WAVE_NUM" != "1" ] 2>/dev/null; then
-        SESSIONS_ON_WAVE=$(grep -c "\"currentWave\":${CURRENT_WAVE_NUM}[,}]" "$METRICS_FILE" 2>/dev/null || echo "0")
+        SESSIONS_ON_WAVE=$(grep -c "\"currentWave\":${CURRENT_WAVE_NUM}[,}]" "$METRICS_FILE" 2>/dev/null || true)
+        SESSIONS_ON_WAVE="${SESSIONS_ON_WAVE:-0}"
     fi
     if [ "${SESSIONS_ON_WAVE:-0}" -ge 3 ] 2>/dev/null; then
         printf '💡 %d sessions on the same wave — consider splitting it into smaller steps.\n' \
