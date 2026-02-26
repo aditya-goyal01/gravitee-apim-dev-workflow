@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright (C) 2015 The Gravitee team (http://gravitee.io)
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+            http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
+    <servers>
+        <server>
+            <id>gravitee-artifactory-releases</id>
+            <username>YOUR_JFROG_USERNAME</username>
+            <password>YOUR_JFROG_ENCRYPTED_PASSWORD</password>
+        </server>
+        <server>
+            <id>gravitee-artifactory-snapshots</id>
+            <username>YOUR_JFROG_USERNAME</username>
+            <password>YOUR_JFROG_ENCRYPTED_PASSWORD</password>
+        </server>
+    </servers>
+    <profiles>
+        <profile>
+            <id>gio-dev</id>
+            <repositories>
+                <repository>
+                    <id>gravitee-artifactory-releases</id>
+                    <releases>
+                        <enabled>true</enabled>
+                    </releases>
+                    <snapshots>
+                        <enabled>false</enabled>
+                    </snapshots>
+                    <url>https://odbxikk7vo-artifactory.services.clever-cloud.com/gravitee-releases/</url>
+                </repository>
+                <repository>
+                    <id>gravitee-artifactory-snapshots</id>
+                    <releases>
+                        <enabled>true</enabled>
+                    </releases>
+                    <snapshots>
+                        <enabled>true</enabled>
+                    </snapshots>
+                    <url>https://odbxikk7vo-artifactory.services.clever-cloud.com/gravitee-snapshots/</url>
+                </repository>
+            </repositories>
+            <pluginRepositories>
+                <pluginRepository>
+                    <snapshots>
+                        <enabled>false</enabled>
+                    </snapshots>
+                    <id>gravitee-artifactory-releases</id>
+                    <name>libs-release</name>
+                    <url>https://odbxikk7vo-artifactory.services.clever-cloud.com/gravitee-releases/</url>
+                </pluginRepository>
+                <pluginRepository>
+                    <snapshots>
+                        <enabled>true</enabled>
+                    </snapshots>
+                    <id>gravitee-artifactory-snapshots</id>
+                    <name>libs-snapshot</name>
+                    <url>https://odbxikk7vo-artifactory.services.clever-cloud.com/gravitee-snapshots/</url>
+                </pluginRepository>
+            </pluginRepositories>
+        </profile>
+    </profiles>
+    <activeProfiles>
+        <activeProfile>gio-dev</activeProfile>
+    </activeProfiles>
+</settings>
