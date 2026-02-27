@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This directory is the `gravitee-dev-workflow` Claude Code plugin — hooks, skills, and shared library that form an integrated daily workflow for Gravitee APIM engineers.
 
-Install: `claude plugin install ./dev-workflow`
+Install: `claude plugin install .`
 
 ## Directory Layout
 

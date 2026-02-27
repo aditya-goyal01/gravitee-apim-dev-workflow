@@ -9,7 +9,7 @@ This plugin closes that loop.
 ## Install
 
 ```bash
-claude plugin install ./dev-workflow
+claude plugin install .
 ```
 
 Registers 6 skills and 3 hook scripts across 2 lifecycle events (SessionStart, SessionEnd). No manual settings.json editing required.
@@ -88,7 +88,7 @@ SESSION END
 ## End-to-End Walkthrough
 
 ### Day 1 (30 min)
-1. `claude plugin install ./dev-workflow` — install the plugin
+1. `claude plugin install .` — install the plugin
 2. Open a new Claude Code session in your APIM checkout
 3. `/gravitee-dev-workflow:hello` — run onboarding, check missing tools
 4. `/gravitee-dev-workflow:install-tools` — if prompted (first time only)
@@ -173,7 +173,7 @@ This state is committed alongside the code at every wave boundary. There is no s
 | Without this plugin | With this plugin |
 |---------------------|-----------------|
 | Re-explain ticket every session (5–10 min) | Zero — session-loader injects it automatically |
-| Re-agree on interface signatures | Zero — interface names and steps are in task-state.md |
+| Re-agree on interface signatures | Near-zero — interface names and steps are in task-state.md; full signatures are in plan-document.md (available on demand, not auto-injected) |
 | Re-find the test command | Zero — `Test:` field is in every wave header |
 | Claude drifts from the accepted plan | Zero — plan-document.md is the authoritative reference |
 | "Where did we leave off?" | Zero — session-loader injects the exact next step |
@@ -243,15 +243,15 @@ Runs after commit, before the PR opens:
 
 ## What Catches Problems
 
-Three layers, all automatic:
+Three layers, all AI-enforced through skill instructions (Claude is expected to follow them — any step can be skipped if explicitly asked):
 
-**Layer 1 — TDD gate**: every step in every wave requires a failing test (RED) before production code. There is no bypass — the workflow does not advance until Step B fails. This gate catches missing test coverage at the smallest possible granularity: one step, one test, one class.
+**Layer 1 — TDD gate**: every step in every wave requires a failing test (RED) before production code. The workflow does not advance until Step B fails. This gate catches missing test coverage at the smallest possible granularity: one step, one test, one class.
 
-**Layer 2 — Pre-commit quality gate**: after all wave steps are GREEN, `code-reviewer` + `silent-failure-hunter` run in parallel. Foundation waves additionally run `type-design-analyzer`. Issues trigger a fix-or-acknowledge loop — the gate re-fires after fixes. Nothing commits without passing or explicitly acknowledging every reported issue.
+**Layer 2 — Pre-commit quality gate**: after all wave steps are GREEN, `code-reviewer` + `silent-failure-hunter` run in parallel. Foundation waves additionally run `type-design-analyzer`. Issues trigger a fix-or-acknowledge loop — the gate re-fires after fixes. Nothing commits without passing or explicitly acknowledging every reported issue. Requires `pr-review-toolkit` to be installed; skipped (and logged) if not present.
 
 **Layer 3 — Pre-PR coverage check**: `pr-test-analyzer` runs on committed files before the PR opens. Critical coverage gaps (criticality ≥ 8) block the PR until addressed or acknowledged.
 
-**Always-on**: `security-guidance` (installed via `claude plugin install security-guidance@claude-plugins-official`) fires as a hook on every file write during the session — OWASP-style warnings before code reaches any review stage.
+**Optional always-on**: `security-guidance` (separate install: `claude plugin install security-guidance@claude-plugins-official`) fires as a hook on every file write during the session — OWASP-style warnings before code reaches any review stage. Not installed by this plugin by default.
 
 ---
 
@@ -262,17 +262,17 @@ Three layers, all automatic:
 | Metric | What it measures | Red flag |
 |--------|-----------------|----------|
 | `duration` | Session wall time in minutes | < 15 min — session ended before meaningful work; check if Claude hit a silent blocker |
-| `toolUseCount` | Total tool invocations (Read, Edit, Bash, Task, etc.) | < 5 — Claude responded without acting; likely a re-explanation session with no output |
+| `toolUseCount` | Tool invocations in the main session transcript (Read, Edit, Bash, Task, etc.; sub-agent tool calls may not be counted) | < 5 — Claude responded without acting; likely a re-explanation session with no output |
 | `commitsCreated` | git commits created in the session | 0 after 45+ min — work happened but nothing committed; wave boundary was not reached |
-| `filesChanged` | Files touched via git diff from merge base | > 20 on a single wave — wave is too broad; split before continuing |
+| `filesChanged` | Files changed from merge-base with main (cumulative across all waves on the branch, not per-session) | > 20 by Wave 2 — wave scope may be too broad; split before continuing |
 | `wavesCompleted` | Waves with ✓ marker added in this session | 0 over 3+ sessions — wave-stall; reassess wave size or step clarity |
 | `branchCompliance` | Percentage of total sessions run on an apim-* branch | < 100% — work ran on non-task branches; context injection may have been absent |
 | `workflowType` | `continue` (resumed from task-state.md), `new_task`, `awaiting_review`, or `free_chat` | `free_chat` repeatedly — task-state.md absent or broken |
-| `reviewRounds` | CHANGES_REQUESTED + APPROVED review events on last merged PR | ≥ 2 — PR needed revision; check test coverage or wave scope before next ticket |
+| `reviewRounds` | CHANGES_REQUESTED events on last merged PR (0 = clean review, 1+ = rework cycles) | ≥ 2 — PR needed rework; check test coverage or wave scope before next ticket |
 
 **Trend arrows** (4-session rolling average): ↑ improving, ↓ declining, → stable. Tracked for tools, commits, and files. No single metric determines the session rating.
 
-**Wave-stall tip**: 3+ sessions on the same `currentWave` (Wave 2 or higher) triggers: "Consider splitting Wave N into smaller steps."
+**Wave-stall tip**: 3+ sessions on the same `currentWave` (Wave 2 or higher — Wave 1 is excluded as Foundation waves are expected to take longer) triggers: "Consider splitting Wave N into smaller steps."
 
 **Rating**: `❤️ Awesome` (a PR merged last session, or a commit landed with no declining trends),
 `😊 Good` (a commit landed, or the session exceeded 10 tool uses),
@@ -367,10 +367,9 @@ high. Zero wins for a workflow tool.
 - task-state.md is parsed with grep. If a developer edits the file manually and deviates from the
   exact format contract, the hooks read empty strings and emit wrong context. The format contract
   is documented (CLAUDE.md — State Management) but not enforced.
-- The reviewRounds metric counts distinct CHANGES_REQUESTED and APPROVED review events from the
-  GitHub API, not true review back-and-forth rounds. One CHANGES_REQUESTED + one APPROVED = 2.
-  Two CHANGES_REQUESTED + one APPROVED = 3. The metric is a useful signal, not a precise count of
-  back-and-forth iterations.
+- The reviewRounds metric counts CHANGES_REQUESTED events from the GitHub API. 0 = clean review,
+  1+ = rework cycles. It does not count how many reviewers approved — only how many times changes
+  were explicitly requested.
 - Wave-stall detection (3+ sessions on the same currentWave) does not trigger for Wave 1.
   Wave 1 (Foundation) is expected to take longer; the exception is intentional but not documented
   in the session-reviewer output.
