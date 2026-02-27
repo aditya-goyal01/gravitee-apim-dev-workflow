@@ -36,15 +36,6 @@ dev-workflow/
 ├── lib/
 │   ├── term.sh               ← terminal output helpers
 │   └── git.sh                ← branch/stash helpers
-│
-└── test-e2e/                 ← end-to-end asciinema recording guide
-    ├── README.md             ← step-by-step recording instructions (12 behaviors)
-    ├── setup.sh              ← creates ~/gravitee-plugin-test fixture project
-    ├── verify.sh             ← verifies recording outputs
-    ├── run-recording.sh      ← orchestrates the full recording session
-    ├── teardown.sh           ← removes fixture project
-    ├── fixtures/             ← Calculator Maven project (pom.xml, Java files, task-state fixtures)
-    └── recordings/           ← cast files (gitignored)
 ```
 
 `plan-document.md` is written by `plan-task` Phase 7 as a reference document. It is never

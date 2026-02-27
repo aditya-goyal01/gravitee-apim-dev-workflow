@@ -1,7 +1,0 @@
-recordings/*.cast
-
-# Eclipse/m2e IDE files generated when opening fixtures/ in IntelliJ or Eclipse
-fixtures/.classpath
-fixtures/.project
-fixtures/.settings/
-fixtures/target/
