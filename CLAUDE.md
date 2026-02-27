@@ -13,7 +13,7 @@ Install: `claude plugin install ./dev-workflow`
 ```
 dev-workflow/
 ├── .claude-plugin/
-│   └── plugin.json          ← registers 6 skills + 3 hooks
+│   └── plugin.json          ← auto-discovers skills/ dir; hooks ref → hooks/hooks.json
 ├── README.md
 ├── CLAUDE.md
 ├── install.sh               ← fallback for non-plugin environments
@@ -28,6 +28,7 @@ dev-workflow/
 │   └── implement-task/SKILL.md
 │
 ├── hooks/
+│   ├── hooks.json            ← hook event config (SessionStart + SessionEnd)
 │   ├── session-loader.sh     ← prompt-based SessionStart; emits hookSpecificOutput JSON to stdout
 │   ├── session-reviewer.sh   ← metrics display to stderr
 │   ├── session-terminator.sh ← metrics append, marker cleanup
@@ -43,95 +44,24 @@ auto-injected into any session — zero token overhead per resume.
 
 ## Skills
 
-| Skill | Description |
-|-------|-------------|
-| `hello` | Read-only onboarding — discovers skills via Glob, checks dev tools, suggests next step |
-| `install-tools` | Guided macOS dev environment — Java 21, Maven, Node, Docker, aliases |
-| `install-plugins` | Recommends and installs 8 Claude Code plugins |
-| `install-mcp-servers` | Recommends and installs 8 MCP servers |
-| `plan-task` | Offline-first ticket resolution, wave decomposition, parallel agents, writes `.claude/task-state.md` |
-| `implement-task` | Wave-by-wave TDD execution, pre-commit quality gate (code-reviewer + silent-failure-hunter + type-design-analyzer on Foundation waves), updates task-state.md, delegates commit/PR to other plugins |
+Six skills: `hello`, `install-tools`, `install-plugins`, `install-mcp-servers`, `plan-task`, `implement-task`. See README.md for descriptions.
 
 ## Hooks
 
-| Script | Event | Matcher | Purpose |
-|--------|-------|---------|---------|
-| `session-reviewer.sh` | SessionStart | `startup\|resume\|clear\|compact` | Print last session metrics + trend arrows to stderr; also displays branch compliance (percentage of sessions on an apim-* branch, computed from full JSONL history) |
-| `session-loader.sh` | SessionStart | `startup\|resume\|clear\|compact` | Read task-state.md, inject branch + wave context to stdout; routes using unqualified skill names (`/implement-task`, `/plan-task`) |
-| `session-terminator.sh` | SessionEnd | `""` | Grep wave progress from task-state.md, append JSONL metrics, clean markers |
-| `branch-manager.sh` | — (utility) | — | Standalone tool: `bash branch-manager.sh <N>` — switches to apim-N, auto-stashes dirty work, offers stash restore. Not a hook; not called automatically. |
-
-**Output contract:** `session-reviewer.sh` writes to **stderr** (terminal display only, never
-injected into Claude's context). `session-loader.sh` writes to **stdout** (injected as the
-first context block of every session). `session-terminator.sh` reads stdin (hook input JSON)
-and writes only to `.claude/session-metrics.jsonl` — no stdout or stderr output in normal operation.
-
-## lib/
-
-Two shared bash files sourced by all hooks:
-
-- `lib/term.sh` — `TL`, `TOPT`, `TASK`, `TOK`, `TERR` (all to stderr); `tty_read` with 60-second timeout
-- `lib/git.sh` — `get_current_branch`, `is_dirty`, `auto_stash`, `find_auto_stash`
-
-**Sourcing pattern** (all hooks use this):
-```bash
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
-source "${PLUGIN_ROOT}/lib/term.sh"
-source "${PLUGIN_ROOT}/lib/git.sh"
-```
-
-`CLAUDE_PLUGIN_ROOT` is set by the plugin system. The fallback uses dirname so manual clones work too.
+Three hooks (Matcher: `startup|resume|clear|compact` for SessionStart, `""` for SessionEnd) + one standalone utility. See README.md for full descriptions. Matchers are the implementation detail:
+- `session-reviewer.sh` / `session-loader.sh`: SessionStart — `startup\|resume\|clear\|compact`
+- `session-terminator.sh`: SessionEnd — `""`
+- `branch-manager.sh`: standalone utility, not a hook
 
 ## Quality Gate
 
-`implement-task` Phase 4.5 runs after all wave steps are GREEN, before commit:
+`implement-task` Phase 4.5: `code-reviewer` (naming, complexity, null safety, structural violations; 80% confidence threshold) + `silent-failure-hunter` (swallowed exceptions, empty catch blocks, RxJava3 reactive silent failures) + `type-design-analyzer` (Foundation waves only: interface invariants, mockability). All parallel. Fix-or-acknowledge loop. Gate re-fires. Skip logged if pr-review-toolkit absent. AI-enforced, not shell-automated.
 
-- **code-reviewer** — naming, complexity, null safety, structural violations. Confidence threshold: 80%.
-- **silent-failure-hunter** — swallowed exceptions, empty catch blocks, unchecked error returns.
-- **type-design-analyzer** — Foundation waves only (interfaces, DTOs, models). Interface invariants + mockability.
-
-All three run in parallel. Fix-or-acknowledge loop. Gate re-fires after fixes. Skip logged if pr-review-toolkit not installed.
-
-The gate is AI-enforced through skill instructions — Claude is expected to follow them. It is not automated by a shell script and can be skipped if explicitly asked.
-
-`plan-task` Phase 6b runs after unified plan assembly, before Dev review:
-design-validator (code-reviewer on plan artefacts) checks APIM anti-patterns → findings merged into Testability Objections.
+`plan-task` Phase 6b: design-validator (code-reviewer on plan artefacts) checks APIM anti-patterns → findings merged into Testability Objections.
 
 ## State Management
 
-Session state lives in `.claude/task-state.md` on the feature branch — committed with the wave's code.
-
-```markdown
-# Task: APIM-<N> — <title>
-
-## Progress
-Wave: 2/4
-Status: in-progress
-Ticket: APIM-<N>
-Cached: 2026-02-25
-
-## Waves
-
-### Wave 1 — Foundation ✓ (commit: abc1234)
-### Wave 2 — Service Layer → (in progress)
-Test: `mvn test -pl module -Dtest=MyTest -q` (~60s)
-Commit: feat(gateway): implement service
-Files: ServiceImpl.java, Repository.java
-Steps:
-- [x] Step one done
-- [ ] Step two — next
-
-### Wave 3 — API Layer ○ (pending)
-
-## Session Log
-- 2026-02-25T10:30Z: Wave 1 complete (3 files)
-```
-
-**Why markdown not JSON:**
-- Claude edits it with the `Edit` tool — no JSON schema production
-- Hooks read it with `grep`/`sed` — no `jq` dependency
-- Committed with the wave — git-versioned, team-visible, PR-diffable
-- Schema "changes" are just markdown edits — no version mismatch
+Session state lives in `.claude/task-state.md` on the feature branch — committed with the wave's code. See README.md for the full example and rationale.
 
 **Format contract:** The `## Progress` section fields are parsed with `grep "^<Field>: "` —
 field order is irrelevant. Extra fields are ignored. Step lines MUST start with `- [ ]` or
@@ -155,13 +85,13 @@ feedback, not mid-implementation) and `session-reviewer` to display `🔄` in th
 | `toolUseCount` | int | Total tool invocations counted in transcript |
 | `duration` | int | Session wall time in seconds (0 if start-time marker missing) |
 | `commitsCreated` | int | git commits created since session start |
-| `filesChanged` | int | Files changed from merge-base with default branch |
+| `filesChanged` | int | Files changed since session start (commits during this session only); fallback to merge-base if no session commits |
 | `workflowType` | string | `continue`, `new_task`, `awaiting_review`, or `free_chat` |
 | `wavesCompleted` | int | Wave headers marked ✓ in task-state.md |
 | `totalWaves` | int | Total wave headers in task-state.md |
 | `currentWave` | int | Wave number from `Wave: N/T` in task-state.md |
 | `prsMerged` | int | PRs merged on this branch (via gh CLI) |
-| `reviewRounds` | int | CHANGES_REQUESTED + APPROVED review events on last merged PR |
+| `reviewRounds` | int | CHANGES_REQUESTED events only on last merged PR; 0 = clean review, 1+ = rework cycles |
 
 **`branchCompliance`** is a derived display metric computed by `session-reviewer.sh` at session start
 (`APIM_ENTRIES * 100 / TOTAL_SESSIONS`) — it is not stored in JSONL. It reflects the percentage
@@ -170,6 +100,12 @@ of all recorded sessions that ran on an apim-* branch.
 **`extract_field` approach:** `session-reviewer.sh` parses JSONL with `grep -oE "\"field\":[^,}]+"`.
 This works correctly for scalar string and numeric values. It would misparse nested JSON objects or
 null values — neither is currently emitted.
+
+## Testing
+
+```bash
+bash test-hooks.sh          # Run full test suite (195 tests)
+```
 
 ## Conventions
 

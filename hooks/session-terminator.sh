@@ -61,7 +61,18 @@ FILES_CHANGED=0
 DEFAULT_BRANCH=$(git -C "$CWD" symbolic-ref refs/remotes/origin/HEAD 2>/dev/null \
     | sed 's|.*/||' || echo "main")
 MERGE_BASE=$(git -C "$CWD" merge-base HEAD "$DEFAULT_BRANCH" 2>/dev/null || echo "")
-if [ -n "$MERGE_BASE" ]; then
+START_COMMIT=""
+if [ -n "$START_TIME" ]; then
+    START_COMMIT=$(git -C "$CWD" rev-list --after="$START_TIME" HEAD 2>/dev/null | tail -1 || echo "")
+fi
+if [ -n "$START_COMMIT" ]; then
+    # Use parent if it exists; if START_COMMIT is the root commit, fall through to merge-base fallback
+    if git -C "$CWD" rev-parse "${START_COMMIT}^" >/dev/null 2>&1; then
+        FILES_CHANGED=$(git -C "$CWD" diff --name-only "${START_COMMIT}^"..HEAD 2>/dev/null | wc -l | tr -d ' ')
+    fi
+fi
+# Fallback: cumulative from merge-base (no start-time marker or no commits this session)
+if [ "${FILES_CHANGED:-0}" -eq 0 ] && [ -n "$MERGE_BASE" ]; then
     FILES_CHANGED=$(git -C "$CWD" diff --name-only "$MERGE_BASE"..HEAD 2>/dev/null | wc -l | tr -d ' ')
 fi
 
@@ -87,7 +98,7 @@ if command -v gh >/dev/null 2>&1 && [ "${PRS_MERGED:-0}" -gt 0 ] 2>/dev/null; th
             | python3 -c "
 import json,sys
 d=json.load(sys.stdin)
-rounds=[r for r in d.get('reviews',[]) if r.get('state') in ('CHANGES_REQUESTED','APPROVED')]
+rounds=[r for r in d.get('reviews',[]) if r.get('state') == 'CHANGES_REQUESTED']
 print(len(rounds))
 " 2>/dev/null || echo "0")
     fi

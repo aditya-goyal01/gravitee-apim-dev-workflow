@@ -75,7 +75,14 @@ Handle three outcomes:
 - Compilation error → fix compilation, re-run Step B. (Not a TDD failure — fix and continue.)
 - "No tests run" / "Tests run: 0" → the test class isn't in compiled output yet. Verify file path and re-run. If still 0: tell Dev and investigate.
 - Test FAILS (expected) → proceed to Step C.
-- Test unexpectedly PASSES → tell Dev: "This test passes without implementation. Either the feature already exists or the test doesn't assert the right thing. Investigate before continuing."
+- Test unexpectedly PASSES → Tell Dev: "This test passes without implementation.
+  Verify two things before continuing:
+  1. Feature pre-existence: run `git log --all --oneline -10 -- <test-file>` — if this
+     feature was recently committed and reverted, the implementation may exist elsewhere.
+  2. Assertion quality: re-read the test you just wrote. Does it assert actual behaviour
+     (specific return values, state changes, thrown exceptions) or just existence
+     (assertNotNull, assertTrue(true))? If the latter, the test cannot go RED — rewrite
+     it to assert specific expected output before proceeding."
 
 **Step C — Write production code**
 Write only what is needed to make the failing test pass.
@@ -126,12 +133,28 @@ Proceed to Phase 5.
 "Review these files from Wave N: [FILES_LIST]. Flag only issues with confidence ≥ 80%: naming
 violations (camelCase methods, PascalCase types), methods >20 lines or >3 nesting levels,
 missing null checks on public API boundary parameters, business logic in controllers,
-persistence logic in service layer. For each: file, line range, issue, confidence."
+persistence logic in service layer. For each: file, line range, issue, confidence.
+
+Context for each rule:
+- Method size > 20 lines: RxJava3 chains with nested operators are hard to debug;
+  keep chains flat so backpressure handling is legible.
+- Null on public API boundary: reactive chains cannot recover from null at subscription
+  time — NullPointerException becomes a gateway hang with no stack trace.
+- Business logic in controller: any permission or filtering logic in a controller
+  requires a controller edit when business rules change — controllers must stay thin."
 
 **silent-failure-hunter** — prompt:
 "Scan Wave N files: [FILES_LIST]. Find: empty catch blocks, caught exceptions not rethrown
 or logged, error returns (null, empty Optional, -1) not checked by callers in the same wave.
-Report: file, line, one-sentence description of what failure becomes invisible."
+Report: file, line, one-sentence description of what failure becomes invisible.
+
+Additionally, for RxJava3 reactive chains specifically:
+- `subscribe()` calls with no `onError` handler: `source.subscribe(v -> ...)` with no
+  second lambda or `onErrorResumeNext` upstream. Error silently terminates the stream.
+- `flatMap`/`concatMap` operations where the inner observable has no error handler and
+  the outer chain has no `onErrorResumeNext`. Error propagates silently.
+- `Single.fromCallable(...)` or `Maybe.fromCallable(...)` without `.onErrorResumeNext`:
+  checked exceptions from the callable are wrapped as errors and may go unhandled."
 
 **type-design-analyzer** (Foundation waves only) — prompt:
 "Review new interfaces and model types in: [FILES_LIST]. Check: do interfaces express

@@ -29,7 +29,17 @@ print(json.dumps({'hookSpecificOutput': {'hookEventName': 'SessionStart', 'addit
 if [ -f "$TASK_STATE" ]; then
     WAVE=$(grep "^Wave: " "$TASK_STATE" 2>/dev/null | head -1 | sed 's/^Wave: //' || echo "")
     STATUS=$(grep "^Status: " "$TASK_STATE" 2>/dev/null | head -1 | sed 's/^Status: //' || echo "")
-    NEXT=$(grep "^- \[ \]" "$TASK_STATE" 2>/dev/null | head -1 | sed 's/^- \[ \] //' || echo "")
+    WAVE_NUM=$(echo "$WAVE" | sed 's|/.*||')
+    WAVE_NUM="${WAVE_NUM:-0}"
+    NEXT_WAVE=$(( WAVE_NUM + 1 ))
+    # Scope grep to current wave section only
+    NEXT=$(sed -n "/^### Wave ${WAVE_NUM} /,/^### Wave ${NEXT_WAVE} /p" "$TASK_STATE" 2>/dev/null \
+        | grep "^- \[ \]" | head -1 | sed 's/^- \[ \] //' || echo "")
+    # Fallback: last wave has no following wave header — grep from current wave to EOF
+    if [ -z "$NEXT" ]; then
+        NEXT=$(sed -n "/^### Wave ${WAVE_NUM} /,\$p" "$TASK_STATE" 2>/dev/null \
+            | grep "^- \[ \]" | head -1 | sed 's/^- \[ \] //' || echo "")
+    fi
 
     if [ "$STATUS" = "awaiting-review" ]; then
         printf "awaiting_review" > "$MARKERS/workflow-type"

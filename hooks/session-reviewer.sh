@@ -133,6 +133,26 @@ if [ "$TOTAL_SESSIONS" -gt 0 ] 2>/dev/null; then
     COMPLIANCE_STR="${COMPLIANCE}% branch compliance"
 fi
 
+# --- N vs. N-1 comparison (side-by-side magnitude display) ---
+if [ "$TOTAL_SESSIONS" -ge 2 ]; then
+    PREV_ENTRY=$(tail -2 "$METRICS_FILE" | head -1)
+    PREV_BRANCH=$(extract_field "$PREV_ENTRY" "branch")
+    PREV_TOOL_USE=$(extract_field "$PREV_ENTRY" "toolUseCount")
+    PREV_COMMITS=$(extract_field "$PREV_ENTRY" "commitsCreated")
+    PREV_FILES=$(extract_field "$PREV_ENTRY" "filesChanged")
+    PREV_DURATION=$(extract_field "$PREV_ENTRY" "duration")
+    if [ "${PREV_DURATION:-0}" -ge 3600 ] 2>/dev/null; then
+        PREV_DURATION_STR="$(( PREV_DURATION / 3600 ))h $(( (PREV_DURATION % 3600) / 60 ))m"
+    elif [ "${PREV_DURATION:-0}" -ge 60 ] 2>/dev/null; then
+        PREV_DURATION_STR="$(( PREV_DURATION / 60 ))m"
+    else
+        PREV_DURATION_STR="${PREV_DURATION:-0}s"
+    fi
+    printf '[Session Reviewer] Prev: %s | %s | tools %s | commits %s | files %s\n' \
+        "${PREV_BRANCH:-—}" "$PREV_DURATION_STR" \
+        "${PREV_TOOL_USE:-—}" "${PREV_COMMITS:-—}" "${PREV_FILES:-—}" >&2
+fi
+
 # --- Output (stderr — terminal only, not injected into Claude context) ---
 printf '[Session Reviewer] Last: %s | %s%s | tools %s %s | commits %s %s | files %s %s → %s\n' \
     "${LAST_BRANCH:-—}" "$DURATION_STR" "$WAVE_DISPLAY" \

@@ -43,8 +43,19 @@ Using Glob and Read directly (no Task agent — keep this fast):
    from step 2. Note commit messages — flag files with 3+ changes in last 5 commits as
    high-churn (needs extra care in wave decomposition).
 
+7. **Module inventory**: For each Maven module found in steps 1–2, extract the top-level
+   package directories: `Glob("**/src/main/java/io/gravitee/**/*.java")` — group by module name.
+   Build a compact module→package summary:
+   "gravitee-apim-rest-api-service: use-cases/ [23 files, active], service/ [18 files, active],
+    legacy/ [4 files, no recent commits — may be deprecated]"
+
+8. **Transitive dependency check**: For the 1–2 primary interfaces found in step 5,
+   grep for classes that import or inject them:
+   `Grep("import.*<InterfaceName>", "**/*.java")` — list their parent modules.
+   These are the "dependent files" — must appear in wave planning to avoid cascading failures.
+
 Output a one-paragraph orientation to Dev: "Found X related files across Y modules. Test framework: Z.
-Key interface: <Name> — methods: [list]. High-churn files: <list>."
+Key interface: <Name> — methods: [list]. High-churn files: <list>. Dependent modules: <list>."
 This grounds both agents and all subsequent phases.
 
 ## Phase 3 — Wave decomposition
@@ -73,6 +84,14 @@ Launch both simultaneously (single message, two Task tool calls):
 - task-planner (subagent_type: Plan, model: opus, max_turns: 15)
   Prompt: task description + wave breakdown from Phase 3 + task-planner.md template ({{TASK_DESCRIPTION}} replaced)
   Include: key interface name and methods, high-churn files list (from Phase 2 orientation)
+  Append at end of prompt:
+  ```
+  ## Live Module Layout (scanned at plan time)
+  <module→package summary from Phase 2 step 7>
+  Dependent modules: <list from Phase 2 step 8>
+
+  This overrides the static Module Layout table above where they conflict.
+  ```
 - test-writer (subagent_type: Plan, model: sonnet)
   Prompt: task description + wave breakdown from Phase 3 + test-writer.md template ({{TASK_DESCRIPTION}} replaced)
   Include: key interface name and methods, high-churn files list (from Phase 2 orientation)
@@ -166,7 +185,9 @@ Wait for sub-task. If concerns found:
   ```
   Do NOT output a separate message — concerns appear in the plan Dev is about to review.
 
-If no concerns: proceed silently.
+After appending (or if no concerns found), emit one compact line to Dev:
+"[Design Validator] Scanned Wave plan for APIM anti-patterns — <N> concern(s) found and merged
+into Testability Objections." (or "no concerns found")
 
 Then ask PR strategy:
 AskUserQuestion header="PR strategy" options:
