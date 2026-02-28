@@ -18,6 +18,11 @@ Determine ticket number:
 - Else → `git rev-parse --abbrev-ref HEAD` → extract number from `apim-<N>`
 - If branch doesn't match → AskUserQuestion header="Ticket" options: ["Enter ticket number", "Describe the task"]
 
+**Branch setup** — immediately after ticket number is known:
+Run `bash "${CLAUDE_PLUGIN_ROOT}/hooks/branch-manager.sh" <N>` (digits only, e.g. `12338`).
+`branch-manager.sh` creates the branch if it doesn't exist, or switches to it if it does — with stash safety.
+Run this before the cache check and before any codebase orientation.
+
 Check for cached description in task state:
 - Run: `grep -A2 "^Cached:" .claude/task-state.md 2>/dev/null` to check if a task-state.md exists with a recent cached date
 - If task-state.md exists and Cached date is within 7 days: use the ticket info from it. Tell Dev: "Using cached ticket [APIM-<N>] — Jira not queried."

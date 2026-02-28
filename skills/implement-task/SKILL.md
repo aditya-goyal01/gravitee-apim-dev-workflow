@@ -20,6 +20,12 @@ Read `.claude/task-state.md`. Extract:
 - COMMIT_MSG from the `Commit:` line in that wave section
 - NEXT_STEP: the first `- [ ]` line in that wave section
 
+**Branch guard** — after reading task-state.md:
+Extract the ticket number from the `Ticket: APIM-<N>` line. Run `git rev-parse --abbrev-ref HEAD`.
+If the current branch does NOT contain `<N>` (case-insensitive):
+  Tell Dev: "⚠ Current branch is `<current-branch>` but task is for APIM-<N>. Run `git checkout apim-<N>` before continuing."
+  Stop — do not proceed to Phase 2.
+
 If task-state.md does not exist: tell Dev no approved plan exists for this branch. Suggest running
 /gravitee-dev-workflow:plan-task. Stop.
 
